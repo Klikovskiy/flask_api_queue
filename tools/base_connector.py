@@ -13,7 +13,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s, %(levelname)s, %(name)s, %(message)s',
     handlers=[
-        logging.FileHandler('logs.log', mode='w', encoding='utf-8'),
+        logging.FileHandler('tools/logs.log', mode='w', encoding='utf-8'),
         logging.StreamHandler()]
 )
 
@@ -211,7 +211,7 @@ def init_resource_statuses(session):
 
 def enable_resource(session, resource_name):
     """
-    Run an SQL query to update the enable status of a resource.
+    Запрос, чтобы обновить статус включения ресурса.
     :param session:
     :param resource_name:
     :return:
@@ -224,7 +224,7 @@ def enable_resource(session, resource_name):
 
 def disable_resource(session, resource_name):
     """
-    Run an SQL query to update the resource's outage status.
+    Запрос, чтобы обновить статус отключения ресурса.
     :param session:
     :param resource_name:
     :return:
@@ -233,3 +233,32 @@ def disable_resource(session, resource_name):
         ResourceStatus.resource_name == resource_name).values(status=0)
     session.execute(stmt)
     session.commit()
+
+
+def get_resource_count_from_database(session, resource_type):
+    """
+    Получает количество задач, которые есть в базе данных.
+    :param session:
+    :param resource_type:
+    :return:
+    """
+    stmt = update(ResourceStatus).where(
+        ResourceStatus.resource_name == resource_type).values(status=0)
+    session.execute(stmt)
+    session.commit()
+    try:
+        if resource_type == 'results':
+            count = session.query(Result).count()
+        elif resource_type == 'status':
+            count = session.query(Task).filter(Task.flag == 0).count()
+        elif resource_type == 'calculation':
+            count = session.query(Task).filter(Task.flag == 1).count()
+        else:
+            count = 0
+
+        return count
+    except Exception as error:
+        logging.warning(f'get_resource_count_from_database Ошибка -> {error}')
+        return 0
+    finally:
+        session.close()

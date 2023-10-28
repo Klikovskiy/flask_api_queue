@@ -41,9 +41,23 @@
         {% endfor %}
         </tbody>
     </table>
+
+
+    <div class="card" style="width: 18rem;">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item"><b>Results Count:</b> <span
+                    id="results-count">Loading...</span></li>
+            <li class="list-group-item"><b>Status Count:</b> <span
+                    id="status-count">Loading...</span></li>
+            <li class="list-group-item"><b>Calculation Count:</b> <span
+                    id="calculation-count">Loading...</span></li>
+        </ul>
+    </div>
+
 </div>
 
 <script>
+    // Управление кнопками.
     document.addEventListener("DOMContentLoaded", function () {
         var buttons = document.querySelectorAll(".enable-btn, .disable-btn");
 
@@ -67,6 +81,28 @@
             });
         });
     });
+
+    // Обновление сount ресурсов.
+    function updateResourceCounts() {
+        var resourceCounts = document.querySelectorAll('[id$="-count"]');
+        resourceCounts.forEach(function (countElement) {
+            var resourceType = countElement.id.split('-')[0]; // Извлекаем тип ресурса
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/api/v1/resource-count/" + resourceType, true);
+
+            xhr.onload = function () {
+                if (xhr.status === 200) {
+                    countElement.textContent = xhr.responseText;
+                }
+            };
+
+            xhr.send();
+        });
+    }
+
+    // Обновляем информацию о количестве ресурсов каждые 5 секунд
+    setInterval(updateResourceCounts, 5000);
+
 </script>
 
 

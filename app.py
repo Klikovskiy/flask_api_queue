@@ -10,7 +10,7 @@ from tools.base_connector import (
     init_resource_statuses,
     ResourceStatus,
     enable_resource,
-    disable_resource,
+    disable_resource, get_resource_count_from_database,
 )
 
 
@@ -106,6 +106,11 @@ def create_app():
 
     @app.route('/resources', methods=['GET'])
     def resources():
+        """
+        Формирует HTML страницу для отслеживания параметров.
+        :return:
+        """
+
         def get_resource_status(resource_name):
             session = data_base.session()
             try:
@@ -115,7 +120,6 @@ def create_app():
             finally:
                 session.close()
 
-        # Получите статус каждого ресурса из базы данных
         resource_statuses = [
             ('results', get_resource_status('results').status),
             ('status', get_resource_status('status').status),
@@ -125,6 +129,16 @@ def create_app():
         ]
         return render_template('resources_control.html',
                                resource_statuses=resource_statuses)
+
+    @app.route('/api/v1/resource-count/<resource_type>', methods=['GET'])
+    def resource_count(resource_type):
+        """
+        Позволяет получить количество задач в базе данных.
+        :param resource_type:
+        :return:
+        """
+        count = get_resource_count_from_database(session, resource_type)
+        return str(count)
 
     api.add_resource(EnableResource, '/enable-resource/<string:resource_name>')
     api.add_resource(DisableResource,
