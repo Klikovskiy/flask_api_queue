@@ -242,11 +242,11 @@ def get_resource_count_from_database(session, resource_type):
     :param resource_type:
     :return:
     """
-    stmt = update(ResourceStatus).where(
-        ResourceStatus.resource_name == resource_type).values(status=0)
-    session.execute(stmt)
-    session.commit()
     try:
+        stmt = update(ResourceStatus).where(
+            ResourceStatus.resource_name == resource_type).values(status=0)
+        session.execute(stmt)
+
         if resource_type == 'results':
             count = session.query(Result).count()
         elif resource_type == 'status':
@@ -260,5 +260,3 @@ def get_resource_count_from_database(session, resource_type):
     except Exception as error:
         logging.warning(f'get_resource_count_from_database Ошибка -> {error}')
         return 0
-    finally:
-        session.close()
