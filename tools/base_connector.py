@@ -210,7 +210,12 @@ def init_resource_statuses(session):
 
 
 def enable_resource(session, resource_name):
-    # Выполните SQL-запрос для обновления статуса включения ресурса
+    """
+    Run an SQL query to update the enable status of a resource.
+    :param session:
+    :param resource_name:
+    :return:
+    """
     stmt = update(ResourceStatus).where(
         ResourceStatus.resource_name == resource_name).values(status=1)
     session.execute(stmt)
@@ -218,7 +223,12 @@ def enable_resource(session, resource_name):
 
 
 def disable_resource(session, resource_name):
-    # Выполните SQL-запрос для обновления статуса отключения ресурса
+    """
+    Run an SQL query to update the resource's outage status.
+    :param session:
+    :param resource_name:
+    :return:
+    """
     stmt = update(ResourceStatus).where(
         ResourceStatus.resource_name == resource_name).values(status=0)
     session.execute(stmt)
