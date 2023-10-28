@@ -2,6 +2,7 @@ import logging
 import time
 
 from sqlalchemy import create_engine, Column, Integer, Text, JSON
+from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
@@ -31,6 +32,14 @@ class Result(Base):
 
     id_tasks = Column(Integer, primary_key=True)
     json = Column(JSON)
+
+
+class ResourceStatus(Base):
+    __tablename__ = 'resource_status'
+
+    id = Column(Integer, primary_key=True)
+    resource_name = Column(Text, unique=True)
+    status = Column(Integer)
 
 
 class Queue:
@@ -173,3 +182,44 @@ class Queue:
         finally:
             session_results.close()
             session_tasks.close()
+
+
+def init_resource_statuses(session):
+    """
+    Создаем таблицу resource_status в базе данных и
+    добавляем записи для каждого ресурса, если их нет.
+    """
+    resource_statuses = [
+        {'resource_name': 'results', 'status': 1},
+        {'resource_name': 'status', 'status': 1},
+        {'resource_name': 'calculation', 'status': 1},
+        {'resource_name': 'secret_get', 'status': 1},
+        {'resource_name': 'secret_put', 'status': 1},
+    ]
+
+    # Проверяем, есть ли уже записи для ресурсов
+    existing_resources = session.query(ResourceStatus.resource_name).all()
+    existing_resource_names = {resource[0] for resource in existing_resources}
+
+    for status_data in resource_statuses:
+        if status_data['resource_name'] not in existing_resource_names:
+            status = ResourceStatus(**status_data)
+            session.add(status)
+
+    session.commit()
+
+
+def enable_resource(session, resource_name):
+    # Выполните SQL-запрос для обновления статуса включения ресурса
+    stmt = update(ResourceStatus).where(
+        ResourceStatus.resource_name == resource_name).values(status=1)
+    session.execute(stmt)
+    session.commit()
+
+
+def disable_resource(session, resource_name):
+    # Выполните SQL-запрос для обновления статуса отключения ресурса
+    stmt = update(ResourceStatus).where(
+        ResourceStatus.resource_name == resource_name).values(status=0)
+    session.execute(stmt)
+    session.commit()

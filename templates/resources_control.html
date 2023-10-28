@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Resource Control</title>
+    <!-- Вставьте ссылки на стили Bootstrap -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+          rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <h1>Resource Control</h1>
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Resource</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for resource_name, status in resource_statuses %}
+        <tr>
+            <td>{{ resource_name }}</td>
+            <td id="{{ resource_name }}-status">
+                {{ 'Enabled' if status == 1 else 'Disabled' }}
+            </td>
+            <td>
+                {% if status == 0 %}
+                <button class="btn btn-primary enable-btn"
+                        data-resource="{{ resource_name }}"
+                        data-action="enable">Enable
+                </button>
+                {% else %}
+                <button class="btn btn-danger disable-btn"
+                        data-resource="{{ resource_name }}"
+                        data-action="disable">Disable
+                </button>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var buttons = document.querySelectorAll(".enable-btn, .disable-btn");
+
+        buttons.forEach(function (button) {
+            button.addEventListener("click", function () {
+                var resource = button.getAttribute("data-resource");
+                var action = button.getAttribute("data-action");
+
+                // Отправьте запрос на включение или отключение ресурса с использованием XMLHttpRequest
+                var xhr = new XMLHttpRequest();
+                xhr.open("POST", "/" + action + "-resource/" + resource, true);
+                xhr.onload = function () {
+                    if (xhr.status === 200) {
+                        // Обновите статус на странице после успешного включения или отключения
+                        document.getElementById(resource + "-status").textContent = (action === "enable") ? "Enabled" : "Disabled";
+                        // Перезагрузите текущую страницу
+                        location.reload();
+                    }
+                };
+                xhr.send();
+            });
+        });
+    });
+</script>
+
+
+</body>
+</html>
