@@ -14,9 +14,16 @@ from tools.base_connector import (
 )
 
 
-def create_app():
+def create_app(session=None):
     app = Flask(__name__)
     api = Api(app)
+
+    if session is None:
+        # Если сессия не передана, создайте ее
+        engine = create_engine(DATABASE_URL)
+        Session = sessionmaker(bind=engine)
+        session = Session()
+        init_resource_statuses(session)
 
     data_base = Queue(DATABASE_URL)
 
@@ -32,7 +39,7 @@ def create_app():
     class Results(Resource):
         def get(self):
             result_status = get_resource_status('results')
-            if result_status.status == 0:  # Ресурс отключен
+            if result_status is not None and result_status.status == 0:
                 return {'error': 'Forbidden'}, 403
 
             t_id, r_list = data_base.get_result()
@@ -43,7 +50,7 @@ def create_app():
     class Status(Resource):
         def get(self, key):
             result_status = get_resource_status('status')
-            if result_status.status == 0:  # Ресурс отключен
+            if result_status is not None and result_status.status == 0:
                 return {'error': 'Forbidden'}, 403
 
             task_id = int(key)
@@ -53,7 +60,7 @@ def create_app():
     class Calculation(Resource):
         def post(self):
             result_status = get_resource_status('calculation')
-            if result_status.status == 0:  # Ресурс отключен
+            if result_status is not None and result_status.status == 0:
                 return {'error': 'Forbidden'}, 403
 
             parser = reqparse.RequestParser()
@@ -70,7 +77,7 @@ def create_app():
     class SecretGet(Resource):
         def get(self):
             result_status = get_resource_status('secret_get')
-            if result_status.status == 0:  # Ресурс отключен
+            if result_status is not None and result_status.status == 0:
                 return {'error': 'Forbidden'}, 403
 
             task_id, task_str = data_base.get_task()
@@ -79,7 +86,7 @@ def create_app():
     class SecretPut(Resource):
         def post(self):
             result_status = get_resource_status('secret_put')
-            if result_status.status == 0:  # Ресурс отключен
+            if result_status is not None and result_status.status == 0:
                 return {'error': 'Forbidden'}, 403
 
             parser = reqparse.RequestParser()
@@ -101,7 +108,6 @@ def create_app():
     class DisableResource(Resource):
         def post(self, resource_name):
             disable_resource(session, resource_name)
-
             return {'message': 'Resource disabled'}, 200
 
     @app.route('/resources', methods=['GET'])
@@ -121,11 +127,21 @@ def create_app():
                 session.close()
 
         resource_statuses = [
-            ('results', get_resource_status('results').status),
-            ('status', get_resource_status('status').status),
-            ('calculation', get_resource_status('calculation').status),
-            ('secret_get', get_resource_status('secret_get').status),
-            ('secret_put', get_resource_status('secret_put').status)
+            ('results',
+             get_resource_status('results').status if get_resource_status(
+                 'results') else 'N/A'),
+            ('status',
+             get_resource_status('status').status if get_resource_status(
+                 'status') else 'N/A'),
+            ('calculation',
+             get_resource_status('calculation').status if get_resource_status(
+                 'calculation') else 'N/A'),
+            ('secret_get',
+             get_resource_status('secret_get').status if get_resource_status(
+                 'secret_get') else 'N/A'),
+            ('secret_put',
+             get_resource_status('secret_put').status if get_resource_status(
+                 'secret_put') else 'N/A')
         ]
         return render_template('resources_control.html',
                                resource_statuses=resource_statuses)
@@ -140,7 +156,8 @@ def create_app():
         count = get_resource_count_from_database(session, resource_type)
         return str(count)
 
-    api.add_resource(EnableResource, '/enable-resource/<string:resource_name>')
+    api.add_resource(EnableResource,
+                     '/enable-resource/<string:resource_name>')
     api.add_resource(DisableResource,
                      '/disable-resource/<string:resource_name>')
 
@@ -154,10 +171,5 @@ def create_app():
 
 
 if __name__ == '__main__':
-    app = create_app()
-    with app.app_context():
-        engine = create_engine(DATABASE_URL)
-        Session = sessionmaker(bind=engine)
-        session = Session()
-        init_resource_statuses(session)
+    app = create_app()  # В этом месте сессия будет создана, если она не была передана
     app.run(debug=True)

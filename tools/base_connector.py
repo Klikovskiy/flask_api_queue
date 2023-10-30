@@ -189,24 +189,31 @@ def init_resource_statuses(session):
     Создаем таблицу resource_status в базе данных и
     добавляем записи для каждого ресурса, если их нет.
     """
-    resource_statuses = [
-        {'resource_name': 'results', 'status': 1},
-        {'resource_name': 'status', 'status': 1},
-        {'resource_name': 'calculation', 'status': 1},
-        {'resource_name': 'secret_get', 'status': 1},
-        {'resource_name': 'secret_put', 'status': 1},
-    ]
 
-    # Проверяем, есть ли уже записи для ресурсов
-    existing_resources = session.query(ResourceStatus.resource_name).all()
-    existing_resource_names = {resource[0] for resource in existing_resources}
+    try:
+        resource_statuses = [
+            {'resource_name': 'results', 'status': 1},
+            {'resource_name': 'status', 'status': 1},
+            {'resource_name': 'calculation', 'status': 1},
+            {'resource_name': 'secret_get', 'status': 1},
+            {'resource_name': 'secret_put', 'status': 1},
+        ]
 
-    for status_data in resource_statuses:
-        if status_data['resource_name'] not in existing_resource_names:
-            status = ResourceStatus(**status_data)
-            session.add(status)
+        # Проверяем, есть ли уже записи для ресурсов
+        existing_resources = session.query(ResourceStatus.resource_name).all()
+        existing_resource_names = {resource[0] for resource in
+                                   existing_resources}
 
-    session.commit()
+        for status_data in resource_statuses:
+            if status_data['resource_name'] not in existing_resource_names:
+                status = ResourceStatus(**status_data)
+                session.add(status)
+
+        session.commit()
+    except Exception as error:
+        # Обработка ошибки и логирование
+        logging.error(f'init_resource_statuses Ошибка -> {error}')
+        session.rollback()
 
 
 def enable_resource(session, resource_name):
