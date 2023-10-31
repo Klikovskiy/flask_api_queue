@@ -172,5 +172,5 @@ def create_app(session=None):
 
 
 if __name__ == '__main__':
-    app = create_app()  # В этом месте сессия будет создана, если она не была передана
+    app = create_app()
     app.run(debug=True)
