@@ -118,13 +118,13 @@ def create_app(session=None):
         """
 
         def get_resource_status(resource_name):
-            session = data_base.session()
-            try:
-                result_status = session.query(ResourceStatus).filter_by(
-                    resource_name=resource_name).first()
-                return result_status
-            finally:
-                session.close()
+            with data_base.session() as session:
+                try:
+                    result_status = session.query(ResourceStatus).filter_by(
+                        resource_name=resource_name).first()
+                    return result_status
+                finally:
+                    session.close()
 
         resource_statuses = [
             ('results',
@@ -153,8 +153,9 @@ def create_app(session=None):
         :param resource_type:
         :return:
         """
-        count = get_resource_count_from_database(session, resource_type)
-        return str(count)
+        with data_base.session() as session:
+            count = get_resource_count_from_database(session, resource_type)
+            return str(count)
 
     api.add_resource(EnableResource,
                      '/enable-resource/<string:resource_name>')
