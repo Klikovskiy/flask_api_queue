@@ -21,8 +21,7 @@ def create_app(session=None):
     if session is None:
         # Если сессия не передана, создайте ее
         engine = create_engine(DATABASE_URL)
-        Session = sessionmaker(bind=engine)
-        session = Session()
+        session = sessionmaker(bind=engine)
         init_resource_statuses(session)
 
     data_base = Queue(DATABASE_URL)
@@ -91,7 +90,7 @@ def create_app(session=None):
 
             parser = reqparse.RequestParser()
             parser.add_argument('task_id', type=int, required=True)
-            parser.add_argument('results', type=str, required=True)
+            parser.add_argument('results', type=list, required=True)
             args = parser.parse_args()
 
             res = data_base.put_result(args['task_id'], args['results'])

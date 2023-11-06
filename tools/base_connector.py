@@ -70,11 +70,11 @@ class Queue:
         session = self.session()
         try:
             result = Result(id_tasks=task_id, json=json_txt)
-            session.add(result)
+            session.add(result)     # Вставка результата
             try:
                 task = session.query(Task).filter(
                     Task.id_tasks == task_id).one()
-                session.delete(task)
+                session.delete(task)    # Удаление задачи
             except NoResultFound:
                 pass
             session.commit()
@@ -83,6 +83,7 @@ class Queue:
             logging.warning(f'put_result Ошибка -> {error}')
             session.rollback()
             return False
+
         finally:
             session.close()
 
@@ -104,6 +105,7 @@ class Queue:
 
     def get_result(self):
         session = self.session()
+        result = None
         try:
             result = session.query(Result).first()
             if result:
@@ -117,6 +119,9 @@ class Queue:
             logging.warning(f'get_result Ошибка -> {error}')
             return None, None
         finally:
+            if result:
+                session.delete(result)
+                session.commit()
             session.close()
 
     def get_result_by_id(self, task_id):
