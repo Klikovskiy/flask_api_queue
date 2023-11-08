@@ -19,15 +19,15 @@ def create_app(session=None):
     api = Api(app)
 
     if session is None:
-        # Если сессия не передана, создайте ее
+        # Если сеанс не передается, создайте новый сеанс с использованием sessionmaker
         engine = create_engine(DATABASE_URL)
-        session = sessionmaker(bind=engine)
+        Session = sessionmaker(bind=engine)
+        session = Session()
         init_resource_statuses(session)
 
     data_base = Queue(DATABASE_URL)
 
     def get_resource_status(resource_name):
-        session = data_base.session()
         try:
             result_status = session.query(ResourceStatus).filter_by(
                 resource_name=resource_name).first()
@@ -42,9 +42,7 @@ def create_app(session=None):
                 return {'error': 'Forbidden'}, 403
 
             t_id, r_list = data_base.get_result()
-            if t_id is None and r_list is None:
-                return {'task_id': t_id, 'results': r_list}
-            return r_list
+            return {'task_id': t_id, 'results': r_list}
 
     class Status(Resource):
         def get(self, key):
@@ -90,7 +88,8 @@ def create_app(session=None):
 
             parser = reqparse.RequestParser()
             parser.add_argument('task_id', type=int, required=True)
-            parser.add_argument('results', type=list, required=True)
+            parser.add_argument('results', type=list, location='json',
+                                required=True)  # Ожидаем список
             args = parser.parse_args()
 
             res = data_base.put_result(args['task_id'], args['results'])

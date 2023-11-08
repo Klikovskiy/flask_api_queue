@@ -111,7 +111,7 @@ class Queue:
             if result:
                 task_id = result.id_tasks
                 json_txt = result.json
-                session.delete(result)
+                #session.delete(result)
                 session.commit()
                 return task_id, json_txt
             return None, None
