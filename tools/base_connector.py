@@ -1,5 +1,6 @@
 import logging
 import time
+from datetime import datetime
 
 from sqlalchemy import create_engine, Column, Integer, Text, JSON
 from sqlalchemy import update
@@ -27,6 +28,18 @@ class Task(Base):
     task = Column(Text)
 
 
+class TaskStatistic(Base):
+    __tablename__ = 'tasks_statistics'
+
+    id_tasks = Column(Integer, primary_key=True)  # id задачи из системы.
+    time_put_task = Column(Integer, nullable=True)  # Время, прихода задачи.
+    time_get_task = Column(Integer, nullable=True)  # Время, взяли на решение.
+    time_put_result = Column(Integer,
+                             nullable=True)  # Время, когда получили решение.
+    time_get_result = Column(Integer,
+                             nullable=True)  # Время, когда забрали решение.
+
+
 class Result(Base):
     __tablename__ = 'results'
 
@@ -47,6 +60,34 @@ class Queue:
         self.engine = create_engine(database_url)
         self.session = sessionmaker(bind=self.engine)
         Base.metadata.create_all(self.engine)
+
+    def update_time_statistics(self, task_id, event):
+        """Ведет статистику обновления данных."""
+
+        session = self.session()
+        try:
+            task_statistic = session.query(TaskStatistic).filter_by(
+                id_tasks=task_id).first()
+
+            if task_statistic is not None:
+                current_time = int(datetime.now().timestamp())
+
+                if event == 'calculation':
+                    task_statistic.time_put_task = current_time
+                elif event == 'secret-get':
+                    task_statistic.time_get_task = current_time
+                elif event == 'secret-put':
+                    task_statistic.time_put_result = current_time
+                elif event == 'results':
+                    task_statistic.time_get_result = current_time
+
+                session.commit()
+        except Exception as e:
+            session.rollback()
+            print("Error updating time for "
+                  f"task {task_id} and event {event}: {e}")
+        finally:
+            session.close()
 
     def put_task(self, task_id, string):
         session = self.session()
@@ -70,11 +111,11 @@ class Queue:
         session = self.session()
         try:
             result = Result(id_tasks=task_id, json=json_txt)
-            session.add(result)     # Вставка результата
+            session.add(result)  # Вставка результата
             try:
                 task = session.query(Task).filter(
                     Task.id_tasks == task_id).one()
-                session.delete(task)    # Удаление задачи
+                session.delete(task)  # Удаление задачи
             except NoResultFound:
                 pass
             session.commit()
@@ -111,7 +152,7 @@ class Queue:
             if result:
                 task_id = result.id_tasks
                 json_txt = result.json
-                #session.delete(result)
+                # session.delete(result)
                 session.commit()
                 return task_id, json_txt
             return None, None

@@ -42,6 +42,8 @@ def create_app(session=None):
                 return {'error': 'Forbidden'}, 403
 
             t_id, r_list = data_base.get_result()
+            # Обновляем статистику
+            data_base.update_time_statistics(t_id, 'results')
             return {'task_id': t_id, 'results': r_list}
 
     class Status(Resource):
@@ -67,6 +69,9 @@ def create_app(session=None):
 
             res = data_base.put_task(args['task_id'], args['task'])
             if res:
+                # Обновляем статистику
+                data_base.update_time_statistics(args['task_id'],
+                                                 'calculation')
                 return {'error': 'OK'}, 201
             else:
                 return {'error': 'Not Added'}, 405
@@ -78,6 +83,8 @@ def create_app(session=None):
                 return {'error': 'Forbidden'}, 403
 
             task_id, task_str = data_base.get_task()
+            # Обновляем статистику
+            data_base.update_time_statistics(task_id, 'secret-get')
             return {'task_id': task_id, 'task': task_str}
 
     class SecretPut(Resource):
@@ -94,6 +101,8 @@ def create_app(session=None):
 
             res = data_base.put_result(args['task_id'], args['results'])
             if res:
+                # Обновляем статистику
+                data_base.update_time_statistics(args['task_id'], 'secret-put')
                 return {'error': 'OK'}, 200
             else:
                 return {'error': 'Not Added'}, 405

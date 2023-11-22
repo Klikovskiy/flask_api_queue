@@ -1,0 +1,74 @@
+CREATE DATABASE flask_base;
+CREATE USER flask_user WITH PASSWORD 'rEiz14cjgsxb';
+ALTER ROLE flask_user SET client_encoding TO 'utf8';
+ALTER ROLE flask_user SET default_transaction_isolation TO 'read committed';
+ALTER ROLE flask_user SET timezone TO 'UTC';
+GRANT ALL PRIVILEGES ON DATABASE flask_base TO flask_user;
+
+
+
+sudo systemctl start gunicorn_flask
+sudo systemctl enable gunicorn_flask
+sudo systemctl status gunicorn_flask
+
+/var/log/nginx
+/etc/nginx/sites-enabled/default
+sudo systemctl restart gunicorn_flask
+
+
+
+server {
+    server_name marketingscanner.ru;
+
+    location /static/ {
+        root /root/mark_scanner;
+    }
+
+    location /media/ {
+        root /root/mark_scanner;
+    }
+
+    location / {
+        include proxy_params;
+        proxy_pass http://127.0.0.1:8000;
+    }
+
+    listen 443 ssl; # managed by Certbot
+    ssl_certificate /etc/letsencrypt/live/marketingscanner.ru/fullchain.pem; # managed by Certbot
+    ssl_certificate_key /etc/letsencrypt/live/marketingscanner.ru/privkey.pem; # managed by Certbot
+    include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+
+}
+
+server {
+    if ($host = marketingscanner.ru) {
+        return 301 https://$host$request_uri;
+    } # managed by Certbot
+
+
+    listen 80;
+    server_name marketingscanner.ru;
+    return 404; # managed by Certbot
+
+
+}
+
+# Конфигурация для проекта 2 (asuavtomatic.ru)
+server {
+    server_name marketingscanner.ru;
+    #server_name 217.18.62.161;
+
+    location / {
+        include proxy_params;
+        proxy_pass http://127.0.0.1:5000;  # Укажите адрес и порт вашего Flask-приложения
+    }
+
+    listen 80;
+
+    # Ограничение доступа по IP (если требуется)
+    # allow ip 1;
+    # allow ip 2;
+    #Пример-> allow 127.0.0.1;
+    # deny all; #Блок всего остального
+}
