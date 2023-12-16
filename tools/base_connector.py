@@ -1,3 +1,4 @@
+import csv
 import logging
 import time
 from datetime import datetime
@@ -228,6 +229,37 @@ class Queue:
         finally:
             session_results.close()
             session_tasks.close()
+
+    def get_task_statistic_by_date_range(self, start_date, end_date):
+        """
+        Извлекает статистические данные из таблицы API.
+        """
+        with self.session() as session:
+            try:
+                query = session.query(TaskStatistic).filter(
+                    TaskStatistic.time_put_task >= start_date,
+                    TaskStatistic.time_get_result <= end_date
+                )
+                data = query.all()
+
+                if data:
+                    file_path = "task_statistic.csv"
+                    with open(file_path, 'w', newline='') as csv_file:
+                        csv_writer = csv.writer(csv_file)
+                        csv_writer.writerow(
+                            ['id_tasks', 'time_put_task', 'time_get_task',
+                             'time_put_result', 'time_get_result'])
+                        for row in data:
+                            csv_writer.writerow(
+                                [row.id_tasks, row.time_put_task,
+                                 row.time_get_task, row.time_put_result,
+                                 row.time_get_result])
+
+                    return file_path
+                else:
+                    return None
+            finally:
+                session.close()
 
 
 def init_resource_statuses(session):

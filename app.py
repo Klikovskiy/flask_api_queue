@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request, send_file
 from flask import render_template
 from flask_restful import Resource, Api, reqparse
 from sqlalchemy import create_engine
@@ -163,6 +163,64 @@ def create_app(session=None):
         with data_base.session() as session:
             count = get_resource_count_from_database(session, resource_type)
             return str(count)
+
+    @app.route('/resources/download', methods=['POST'])
+    def download_task_statistic():
+        from datetime import datetime
+
+        start_date_str = request.form.get('start_date')
+        end_date_str = request.form.get('end_date')
+
+        # Преобразование строковых дат в объекты datetime
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+        end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+
+        # Преобразование объектов datetime в timestamp
+        start_timestamp = int(start_date.timestamp())
+        end_timestamp = int(end_date.timestamp())
+
+        file_path = data_base.get_task_statistic_by_date_range(start_timestamp,
+                                                               end_timestamp)
+
+        if file_path:
+            return send_file(file_path, as_attachment=True)
+        else:
+            def get_resource_status(resource_name):
+                with data_base.session() as session:
+                    try:
+                        result_status = session.query(
+                            ResourceStatus).filter_by(
+                            resource_name=resource_name).first()
+                        return result_status
+                    finally:
+                        session.close()
+
+            resource_statuses = [
+                ('results',
+                 get_resource_status('results').status if get_resource_status(
+                     'results') else 'N/A'),
+                ('status',
+                 get_resource_status('status').status if get_resource_status(
+                     'status') else 'N/A'),
+                ('calculation',
+                 get_resource_status(
+                     'calculation').status if get_resource_status(
+                     'calculation') else 'N/A'),
+                ('secret_get',
+                 get_resource_status(
+                     'secret_get').status if get_resource_status(
+                     'secret_get') else 'N/A'),
+                ('secret_put',
+                 get_resource_status(
+                     'secret_put').status if get_resource_status(
+                     'secret_put') else 'N/A')
+            ]
+
+            error_message = 'Нет данных в этом диапазоне дат!'
+            return render_template('resources_control.html',
+                                   resource_statuses=resource_statuses,
+                                   error_message=error_message)
+
 
     api.add_resource(EnableResource,
                      '/enable-resource/<string:resource_name>')
