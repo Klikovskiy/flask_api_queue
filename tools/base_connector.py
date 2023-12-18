@@ -2,7 +2,7 @@ import csv
 import logging
 import time
 from datetime import datetime
-
+from sqlalchemy import and_
 from sqlalchemy import create_engine, Column, Integer, Text, JSON
 from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
@@ -234,11 +234,25 @@ class Queue:
         """
         Извлекает статистические данные из таблицы API.
         """
+        # Преобразование дат в unixtime
+        # Не раньше 00:00
+        start_unixtime = datetime.strptime(start_date, '%Y-%m-%d').timestamp()
+        # Не позже 23:59:59
+        end_unixtime = datetime.strptime(end_date,
+                                         '%Y-%m-%d').timestamp() + 86399
+
+
         with self.session() as session:
+
+            logging.critical(f"Количество записей в TaskStatistic: {session.query(TaskStatistic).count()}")
+
             try:
                 query = session.query(TaskStatistic).filter(
-                    TaskStatistic.time_put_task >= start_date,
-                    TaskStatistic.time_get_result <= end_date
+                    and_(
+                        TaskStatistic.time_put_task >= start_unixtime,
+                        TaskStatistic.time_put_task < end_unixtime,
+                        TaskStatistic.time_get_result <= end_unixtime
+                    )
                 )
                 data = query.all()
 

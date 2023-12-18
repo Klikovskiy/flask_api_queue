@@ -122,6 +122,7 @@ def create_app(session=None):
         """
         Формирует HTML страницу для отслеживания параметров.
         :return:
+        https://asuavtomatic.ru/resources
         """
 
         def get_resource_status(resource_name):
@@ -166,22 +167,11 @@ def create_app(session=None):
 
     @app.route('/resources/download', methods=['POST'])
     def download_task_statistic():
-        from datetime import datetime
 
         start_date_str = request.form.get('start_date')
         end_date_str = request.form.get('end_date')
-
-        # Преобразование строковых дат в объекты datetime
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
-        end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
-
-        # Преобразование объектов datetime в timestamp
-        start_timestamp = int(start_date.timestamp())
-        end_timestamp = int(end_date.timestamp())
-
-        file_path = data_base.get_task_statistic_by_date_range(start_timestamp,
-                                                               end_timestamp)
-
+        file_path = data_base.get_task_statistic_by_date_range(start_date_str,
+                                                               end_date_str)
         if file_path:
             return send_file(file_path, as_attachment=True)
         else:
@@ -220,7 +210,6 @@ def create_app(session=None):
             return render_template('resources_control.html',
                                    resource_statuses=resource_statuses,
                                    error_message=error_message)
-
 
     api.add_resource(EnableResource,
                      '/enable-resource/<string:resource_name>')
