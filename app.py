@@ -95,8 +95,7 @@ def create_app(session=None):
 
             parser = reqparse.RequestParser()
             parser.add_argument('task_id', type=int, required=True)
-            parser.add_argument('results', type=list, location='json',
-                                required=True)  # Ожидаем список
+            parser.add_argument('results', location='json', required=True)
             args = parser.parse_args()
 
             res = data_base.put_result(args['task_id'], args['results'])
