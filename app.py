@@ -10,7 +10,7 @@ from tools.base_connector import (
     init_resource_statuses,
     ResourceStatus,
     enable_resource,
-    disable_resource, get_resource_count_from_database,
+    disable_resource, get_resource_count_from_database, TaskStatistic,
 )
 
 
@@ -34,6 +34,44 @@ def create_app(session=None):
             return result_status
         finally:
             session.close()
+
+    class Show(Resource):
+        def get(self):
+            result_status = get_resource_status('results')
+            if result_status is not None and result_status.status == 0:
+                return {'error': 'Forbidden'}, 403
+
+            # Получение данных из TaskStatistic
+            income_tasks = session.query(TaskStatistic.id_tasks).filter(
+                TaskStatistic.time_put_task.isnot(None),
+                TaskStatistic.time_get_task.is_(None),
+                TaskStatistic.time_put_result.is_(None),
+                TaskStatistic.time_get_result.is_(None)
+            ).all()
+
+            calculation_tasks = session.query(TaskStatistic.id_tasks).filter(
+                TaskStatistic.time_put_task.isnot(None),
+                TaskStatistic.time_get_task.isnot(None),
+                TaskStatistic.time_put_result.is_(None),
+                TaskStatistic.time_get_result.is_(None)
+            ).all()
+
+            calculated_tasks = session.query(TaskStatistic.id_tasks).filter(
+                TaskStatistic.time_put_task.isnot(None),
+                TaskStatistic.time_get_task.isnot(None),
+                TaskStatistic.time_put_result.isnot(None),
+                TaskStatistic.time_get_result.is_(None)
+            ).all()
+
+            income_list = [task[0] for task in income_tasks]
+            calculation_list = [task[0] for task in calculation_tasks]
+            calculated_list = [task[0] for task in calculated_tasks]
+
+            return {
+                'income': income_list,
+                'calculation': calculation_list,
+                'calculated': calculated_list
+            }
 
     class Results(Resource):
         def get(self):
@@ -221,6 +259,7 @@ def create_app(session=None):
     api.add_resource(Calculation, '/api/v1/calculation')
     api.add_resource(SecretGet, '/api/v1/secret-get')
     api.add_resource(SecretPut, '/api/v1/secret-put')
+    api.add_resource(Show, '/api/v1/show')
 
     return app
 
