@@ -2,6 +2,7 @@ import csv
 import logging
 import time
 from datetime import datetime
+
 from sqlalchemy import and_
 from sqlalchemy import create_engine, Column, Integer, Text, JSON
 from sqlalchemy import update
@@ -32,13 +33,30 @@ class Task(Base):
 class TaskStatistic(Base):
     __tablename__ = 'tasks_statistics'
 
-    id_tasks = Column(Integer, primary_key=True)  # id задачи из системы.
-    time_put_task = Column(Integer, nullable=True)  # Время, прихода задачи.
-    time_get_task = Column(Integer, nullable=True)  # Время, взяли на решение.
-    time_put_result = Column(Integer,
-                             nullable=True)  # Время, когда получили решение.
-    time_get_result = Column(Integer,
-                             nullable=True)  # Время, когда забрали решение.
+    id_tasks = Column(
+        Integer,
+        primary_key=True,
+    )  # id задачи из системы.
+    time_put_task = Column(
+        Integer,
+        nullable=True,
+        default=None
+    )  # Время, прихода задачи.
+    time_get_task = Column(
+        Integer,
+        nullable=True,
+        default=None
+    )  # Время, взяли на решение.
+    time_put_result = Column(
+        Integer,
+        nullable=True,
+        default=None
+    )  # Время, когда получили решение.
+    time_get_result = Column(
+        Integer,
+        nullable=True,
+        default=None
+    )  # Время, когда забрали решение.
 
 
 class Result(Base):
@@ -241,10 +259,10 @@ class Queue:
         end_unixtime = datetime.strptime(end_date,
                                          '%Y-%m-%d').timestamp() + 86399
 
-
         with self.session() as session:
 
-            logging.critical(f"Количество записей в TaskStatistic: {session.query(TaskStatistic).count()}")
+            logging.critical(
+                f"Количество записей в TaskStatistic: {session.query(TaskStatistic).count()}")
 
             try:
                 query = session.query(TaskStatistic).filter(

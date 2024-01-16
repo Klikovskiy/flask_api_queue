@@ -10,7 +10,8 @@ from tools.base_connector import (
     init_resource_statuses,
     ResourceStatus,
     enable_resource,
-    disable_resource, get_resource_count_from_database, TaskStatistic,
+    disable_resource, get_resource_count_from_database, Task,
+    Result,
 )
 
 
@@ -36,32 +37,24 @@ def create_app(session=None):
             session.close()
 
     class Show(Resource):
+        """ Получить id задач в зависимости от их статуса. """
         def get(self):
             result_status = get_resource_status('results')
             if result_status is not None and result_status.status == 0:
                 return {'error': 'Forbidden'}, 403
 
-            # Получение данных из TaskStatistic
-            income_tasks = session.query(TaskStatistic.id_tasks).filter(
-                TaskStatistic.time_put_task.isnot(None),
-                TaskStatistic.time_get_task.is_(None),
-                TaskStatistic.time_put_result.is_(None),
-                TaskStatistic.time_get_result.is_(None)
+            # Еще не взяты в расчет
+            income_tasks = session.query(Task.id_tasks).filter(
+                Task.flag == 0
             ).all()
 
-            calculation_tasks = session.query(TaskStatistic.id_tasks).filter(
-                TaskStatistic.time_put_task.isnot(None),
-                TaskStatistic.time_get_task.isnot(None),
-                TaskStatistic.time_put_result.is_(None),
-                TaskStatistic.time_get_result.is_(None)
+            # Решаются.
+            calculation_tasks = session.query(Task.id_tasks).filter(
+                Task.flag == 1
             ).all()
 
-            calculated_tasks = session.query(TaskStatistic.id_tasks).filter(
-                TaskStatistic.time_put_task.isnot(None),
-                TaskStatistic.time_get_task.isnot(None),
-                TaskStatistic.time_put_result.isnot(None),
-                TaskStatistic.time_get_result.is_(None)
-            ).all()
+            # Уже готовы.
+            calculated_tasks = session.query(Result.id_tasks).filter().all()
 
             income_list = [task[0] for task in income_tasks]
             calculation_list = [task[0] for task in calculation_tasks]
@@ -133,7 +126,7 @@ def create_app(session=None):
 
             parser = reqparse.RequestParser()
             parser.add_argument('task_id', type=int, required=True)
-            parser.add_argument('results', type=list, location='json', 
+            parser.add_argument('results', type=list, location='json',
                                 required=True)
             args = parser.parse_args()
 
