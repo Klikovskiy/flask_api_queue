@@ -262,14 +262,15 @@ class Queue:
         with self.session() as session:
 
             logging.critical(
-                f"Количество записей в TaskStatistic: {session.query(TaskStatistic).count()}")
+                "Количество записей в TaskStatistic: "
+                f"{session.query(TaskStatistic).count()}")
 
             try:
                 query = session.query(TaskStatistic).filter(
                     and_(
                         TaskStatistic.time_put_task >= start_unixtime,
                         TaskStatistic.time_put_task < end_unixtime,
-                        TaskStatistic.time_get_result <= end_unixtime
+                        # TaskStatistic.time_get_result <= end_unixtime
                     )
                 )
                 data = query.all()

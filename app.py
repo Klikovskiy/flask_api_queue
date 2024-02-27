@@ -38,6 +38,7 @@ def create_app(session=None):
 
     class Show(Resource):
         """ Получить id задач в зависимости от их статуса. """
+
         def get(self):
             result_status = get_resource_status('results')
             if result_status is not None and result_status.status == 0:
