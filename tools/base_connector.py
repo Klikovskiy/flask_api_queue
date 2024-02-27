@@ -1,8 +1,9 @@
 import csv
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
+from apscheduler.schedulers.background import BackgroundScheduler
 from sqlalchemy import and_
 from sqlalchemy import create_engine, Column, Integer, Text, JSON
 from sqlalchemy import update
@@ -10,7 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 
-from config import Base
+from config import Base, TASK_CHECK_INTERVAL_MINUTES
 
 logging.basicConfig(
     level=logging.INFO,
@@ -78,7 +79,31 @@ class Queue:
     def __init__(self, database_url):
         self.engine = create_engine(database_url)
         self.session = sessionmaker(bind=self.engine)
+        self.scheduler = BackgroundScheduler()
+
         Base.metadata.create_all(self.engine)
+        self.delay_check: int = TASK_CHECK_INTERVAL_MINUTES
+
+    def start_scheduler(self):
+        """ Периодический запуск задач. """
+        self.scheduler.add_job(self.check_task_time, 'interval', minutes=int(
+            self.delay_check))
+        self.scheduler.start()
+
+    def check_task_time(self):
+        """ Поиск задач, обнуление флага, сравнение со временем. """
+        with self.session() as session:
+            tasks_to_check = session.query(Task).filter(Task.flag == 1).all()
+            logging.info(f'Find a Task - {len(tasks_to_check)}')
+            for task in tasks_to_check:
+                task_statistic = session.query(TaskStatistic).filter_by(
+                    id_tasks=task.id_tasks).first()
+                if task_statistic is None:
+                    continue
+                if datetime.now() > (task_statistic.time_get_task + timedelta(
+                        minutes=int(self.delay_check))):
+                    task.flag = 0
+            session.commit()
 
     def update_time_statistics(self, task_id, event):
         """Ведет статистику обновления данных."""
@@ -103,8 +128,8 @@ class Queue:
                 session.commit()
         except Exception as e:
             session.rollback()
-            print("Error updating time for "
-                  f"task {task_id} and event {event}: {e}")
+            logging.critical('Error updating time for task '
+                             f'{task_id} and event {event}: {e}')
         finally:
             session.close()
 

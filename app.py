@@ -27,6 +27,7 @@ def create_app(session=None):
         init_resource_statuses(session)
 
     data_base = Queue(DATABASE_URL)
+    data_base.start_scheduler()
 
     def get_resource_status(resource_name):
         try:
@@ -261,3 +262,4 @@ def create_app(session=None):
 if __name__ == '__main__':
     app = create_app()
     app.run(debug=True)
+
